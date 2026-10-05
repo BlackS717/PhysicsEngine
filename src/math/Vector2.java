@@ -16,6 +16,19 @@ public class Vector2 {
         return y;
     }
 
+    public void setX(float x){
+        this.x = x;
+    }
+
+    public void setY(float y){
+        this.y = y;
+    }
+
+    public void setCoordinates(float x, float y){
+        setX(x);
+        setY(y);
+    }
+
     public Vector2 add(Vector2 v) {
         return new Vector2(x + v.getX(), y + v.getY());
     }

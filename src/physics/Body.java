@@ -3,16 +3,18 @@ package physics;
 import math.Transform;
 import math.Vector2;
 
-public class Sphere {
+public class Body {
     private Transform transform;
     private Vector2 velocity;
     private Vector2 acceleration;
 
-    public Sphere(){
+    private float mass;
+
+    public Body(){
         this(new Transform());
     }
 
-    public Sphere(Transform transform) {
+    public Body(Transform transform) {
         this.transform = transform;
         this.velocity = new Vector2(0,0);
         this.acceleration = new Vector2(0,0);
@@ -41,6 +43,25 @@ public class Sphere {
 
     private void updateVelocity(float dt){
         setVelocity(this.velocity.add(this.acceleration.mult(dt)));
+    }
+
+    public void applyForces(Vector2... forces){
+        // reset the acceleration
+        resetAcceleration();
+
+        // apply the forces
+        Vector2 forcesSum = new Vector2(0,0);
+        for(Vector2 force: forces){
+            forcesSum = forcesSum.add(force);
+        }
+
+        // update acceleration
+        setAcceleration(forcesSum.div(mass));
+    }
+
+
+    private void resetAcceleration(){
+        this.acceleration.setCoordinates(0,0);
     }
 
     // Getters and Setters
