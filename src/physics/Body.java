@@ -2,6 +2,7 @@ package physics;
 
 import math.Transform;
 import math.Vector2;
+import rendering.BodyRenderInfo;
 
 public class Body {
     private Transform transform;
@@ -10,14 +11,23 @@ public class Body {
 
     private float mass;
 
+    // rendering
+    private BodyRenderInfo renderInfo= new BodyRenderInfo();
+
     public Body(){
-        this(new Transform());
+        this(new Transform(), 1.0f);
     }
 
-    public Body(Transform transform) {
+    public Body(Transform transform, float mass) throws IllegalArgumentException{
+        if(mass <= 0){
+            throw new IllegalArgumentException("Mass must be positive.");
+        }
+
+
         this.transform = transform;
         this.velocity = new Vector2(0,0);
         this.acceleration = new Vector2(0,0);
+        this.mass = mass;
     }
 
     /***
@@ -25,7 +35,7 @@ public class Body {
      * to get the value, you divide 1 by the desired fps.
      * */
 
-    private void integrate(float dt) {
+    public void integrate(float dt) {
         updatePosition(dt);
 
         updateVelocity(dt);
@@ -73,8 +83,20 @@ public class Body {
         this.acceleration = acceleration;
     }
 
+    public float getMass(){
+        return this.mass;
+    }
+
+    public void setMass(float mass){
+        this.mass = mass;
+    }
+
     public Transform getTransform() {
         return transform;
+    }
+
+    public BodyRenderInfo getRenderInfo(){
+        return this.renderInfo;
     }
 
 }

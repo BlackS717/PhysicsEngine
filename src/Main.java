@@ -1,13 +1,29 @@
+import math.Transform;
+import math.Vector2;
+import physics.Body;
+import simulation.Simulation;
+import rendering.Renderer;
+
+import java.awt.*;
+
 //TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 void main() {
-    //TIP Press <shortcut actionId="ShowIntentionActions"/> with your caret at the highlighted text
-    // to see how IntelliJ IDEA suggests fixing it.
-    IO.println(String.format("Hello and welcome!"));
+    Simulation sim = new Simulation(60);
+    Vector2 initialVelocity = new Vector2(-5f, 0.0f);
+    Body light = new Body(new Transform(new Vector2(-4,60)), 1.0f);
+    light.getTransform().setScale(new Vector2(0.5f, 0.5f));
+    light.setVelocity(initialVelocity);
+    Body medium = new Body(new Transform(new Vector2(0,60)), 10.0f);
+    medium.setVelocity(initialVelocity);
+    medium.getTransform().setScale(new Vector2(1f, 1f));
+    Body heavy = new Body(new Transform(new Vector2(4,60)), 100.0f);
+    heavy.setVelocity(initialVelocity);
+    heavy.getTransform().setScale(new Vector2(1.5f, 1.5f));
 
-    for (int i = 1; i <= 5; i++) {
-        //TIP Press <shortcut actionId="Debug"/> to start debugging your code. We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint
-        // for you, but you can always add more by pressing <shortcut actionId="ToggleLineBreakpoint"/>.
-        IO.println("i = " + i);
-    }
+
+    sim.addBody(light);
+    sim.addBody(medium);
+    sim.addBody(heavy);
+    Renderer.run(sim);
 }
