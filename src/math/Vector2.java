@@ -1,0 +1,46 @@
+package math;
+
+public class Vector2 {
+    private float x, y;
+
+    public Vector2(float x, float y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    public float getX() {
+        return x;
+    }
+
+    public float getY() {
+        return y;
+    }
+
+    public Vector2 add(Vector2 v) {
+        return new Vector2(x + v.getX(), y + v.getY());
+    }
+
+    public Vector2 sub(Vector2 v) {
+        return new Vector2(x - v.getX(), y - v.getY());
+    }
+
+    public Vector2 mult(float f) {
+        return new Vector2(x * f, y * f);
+    }
+
+    public Vector2 mult(Vector2 v) {
+        return new Vector2(x * v.getX(), y * v.getY());
+    }
+
+    public Vector2 div(float f) {
+        return new Vector2(x / f, y / f);
+    }
+
+    public Vector2 div(Vector2 v) {
+        return new Vector2(x / v.getX(), y / v.getY());
+    }
+
+    public float dotProduct(Vector2 v) {
+        return x * v.getX() + y * v.getY();
+    }
+}
