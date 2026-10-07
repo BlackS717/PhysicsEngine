@@ -23,20 +23,32 @@ public class Collision {
     }
 
     public void resolveCollision(){
+//        System.out.println("before resolveCollision");
+//        System.out.println("normal: " + normal);
+//        System.out.println("penetration: " + penetration);
+//        System.out.println("b1 position: " + b1.getTransform().getPosition() + " velocity: " + b1.getVelocity());
+//        System.out.println("b2 position: " + b2.getTransform().getPosition() + " velocity: " + b2.getVelocity());
+
         correctPositions();
         resolveVelocities();
+
+//        System.out.println("after resolveCollision");
+//        System.out.println("normal: " + normal);
+//        System.out.println("penetration: " + penetration);
+//        System.out.println("b1 position: " + b1.getTransform().getPosition() + " velocity: " + b1.getVelocity());
+//        System.out.println("b2 position: " + b2.getTransform().getPosition() + " velocity: " + b2.getVelocity());
+
     }
 
     private void correctPositions(){
-        float totalMass = b1.getMass() + b2.getMass();
-        float b1Correction = (b2.getMass() / totalMass) * penetration;
-        float b2Correction = (b1.getMass() / totalMass) * penetration;
+        float totalInverseMass = (b1.getInverseMass()) + (b2.getInverseMass());
+        Vector2 correction = normal.mult(penetration / totalInverseMass);
 
-        Vector2 b1Pos = b1.getTransform().getPosition();
-        Vector2 b2Pos = b2.getTransform().getPosition();
+        Vector2 b1Correction = correction.mult(b1.getInverseMass());
+        Vector2 b2Correction = correction.mult(b2.getInverseMass());
 
-        b1.getTransform().setPosition(b1Pos.sub(normal.mult(b1Correction)));
-        b2.getTransform().setPosition(b2Pos.add(normal.mult(b2Correction)));
+        b1.getTransform().setPosition(b1.getTransform().getPosition().sub(b1Correction));
+        b2.getTransform().setPosition(b2.getTransform().getPosition().add(b2Correction));
     }
 
     private void resolveVelocities(){
@@ -50,7 +62,7 @@ public class Collision {
         float restitution = Math.max(b1.getRestitution(), b2.getRestitution());
 
         float impulseMagnitude = -(1 + restitution) * velocityAlongNormal;
-        impulseMagnitude /= (1 / b1.getMass()) + (1 / b2.getMass());
+        impulseMagnitude /= (b1.getInverseMass()) + (b2.getInverseMass());
 
         Vector2 impulse = normal.mult(impulseMagnitude);
 

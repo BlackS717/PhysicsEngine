@@ -60,4 +60,14 @@ public class Transform {
     public int getZ() {
         return z;
     }
+
+    @Override
+    public String toString() {
+        return "Transform{" +
+                "position=" + position +
+                ", rotation=" + rotation +
+                ", scale=" + scale +
+                ", z=" + z +
+                '}';
+    }
 }

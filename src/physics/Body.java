@@ -19,8 +19,13 @@ public class Body {
     private final Vector2 initialAcceleration;
 
     private float mass;
+    private float inverseMass;
 
-    private float restitionCoefficient = 1.0f; // 1.0f is perfectly elastic, 0.0f is perfectly inelastic
+    private float restitutionCoefficient = 1.0f; // 1.0f is perfectly elastic, 0.0f is perfectly inelastic
+
+
+    private boolean isStatic = false;
+
 
     // rendering
     private BodyRenderInfo renderInfo= new BodyRenderInfo();
@@ -38,6 +43,7 @@ public class Body {
         this.velocity = new Vector2(0,0);
         this.acceleration = new Vector2(0,0);
         this.mass = mass;
+        this.inverseMass = 1.0f / mass;
 
         initialTransform = new Transform(transform);
         initialVelocity = new Vector2(velocity);
@@ -50,6 +56,8 @@ public class Body {
      * */
 
     public void integrate(float dt) {
+        if(isStatic) return;
+
         updatePosition(dt);
 
         updateVelocity(dt);
@@ -90,7 +98,7 @@ public class Body {
 
     // Getters and Setters
     public void setVelocity(Vector2 velocity){
-        this.velocity = velocity;
+        this.velocity = isStatic ? new Vector2(0,0) : velocity;
     }
     public Vector2 getVelocity(){
         return this.velocity;
@@ -109,14 +117,19 @@ public class Body {
 
     public void setMass(float mass){
         this.mass = mass;
+        this.inverseMass = isStatic ? 0.0f : 1.0f / mass;
+    }
+
+    public float getInverseMass(){
+        return this.inverseMass;
     }
 
     public void setRestitution(float restitution){
-        this.restitionCoefficient = restitution;
+        this.restitutionCoefficient = restitution;
     }
 
     public float getRestitution(){
-        return this.restitionCoefficient;
+        return this.restitutionCoefficient;
     }
 
     public Transform getTransform() {
@@ -145,6 +158,12 @@ public class Body {
         return d.getX() * d.getX() + d.getY() * d.getY() <= (radiusA + radiusB) * (radiusA + radiusB);
     }
 
+     public boolean isStatic(){
+        return this.isStatic;
+    }
 
-
+    public void setStatic(boolean isStatic){
+        this.isStatic = isStatic;
+        this.inverseMass = isStatic ? 0.0f : 1.0f / mass;
+    }
 }

@@ -58,12 +58,7 @@ public class Simulation {
 
         // resolve collisions
         for(Collision collision: collisionPairs){
-            // positional correction
-            collision.correctPositions();
-
-            // velocity correction
-
-
+            collision.resolveCollision();
         }
 
     }

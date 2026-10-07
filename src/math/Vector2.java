@@ -64,4 +64,9 @@ public class Vector2 {
     public float magnitude() {
         return (float) Math.sqrt(x * x + y * y);
     }
+
+    @Override
+    public String toString() {
+        return "Vector2(" + x + ", " + y + ")";
+    }
 }
