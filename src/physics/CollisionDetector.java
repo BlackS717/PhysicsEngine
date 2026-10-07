@@ -2,8 +2,11 @@ package physics;
 
 import math.Vector2;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * Convention used everywhere: a Collision(A, B, normal, penetration, contactPoint) has a normal pointing from A to B.
+ * Convention used everywhere: a Collision(A, B, normal, penetration, contactPoints) has a normal pointing from A to B.
  * Boxes may be rotated: their rotation is read from the owning body's transform (radians, counter-clockwise).
  */
 public class CollisionDetector {
@@ -23,7 +26,7 @@ public class CollisionDetector {
             if (c == null) return null;
 
             // re-express the result in the caller's order: (box, circle), normal box -> circle
-            return new Collision(collider1, collider2, c.getNormal().mult(-1), c.getPenetration(), c.getContactPoint());
+            return new Collision(collider1, collider2, c.getNormal().mult(-1), c.getPenetration(), c.getContactPoints());
         }
         else if (collider1 instanceof BoxCollider && collider2 instanceof BoxCollider) {
             return detectBoxBoxCollision((BoxCollider) collider1, (BoxCollider) collider2);
@@ -131,7 +134,7 @@ public class CollisionDetector {
     /**
      * Separating Axis Theorem for two oriented boxes: test the 4 face normals (2 per box). If any axis separates
      * the boxes there is no collision; otherwise the axis with the smallest overlap is the collision normal.
-     * The contact point is found by taking the incident box's vertices that sank past the reference face.
+     * Contact points are the incident box's vertices that sank past the reference face (2 for a flat landing).
      */
     private static Collision detectBoxBoxCollision(BoxCollider a, BoxCollider b) {
         Vector2 centerA = a.getCenter();
@@ -201,9 +204,8 @@ public class CollisionDetector {
                 ? getVertices(centerB, axB, ayB, hwB, hhB)
                 : getVertices(centerA, axA, ayA, hwA, hhA);
 
-        // contact point = average of the incident vertices that are past the reference face
-        Vector2 sum = new Vector2(0, 0);
-        int count = 0;
+        // one contact point per incident vertex that is past the reference face (usually 2 for face contact)
+        List<Vector2> contactPoints = new ArrayList<>();
 
         for (Vector2 v : incidentVertices) {
             float depth = planeOffset - v.dotProduct(referenceNormal);
@@ -213,17 +215,17 @@ public class CollisionDetector {
             float lateral = v.sub(referenceCenter).dotProduct(tangent);
             float clampedLateral = clamp(lateral, -tangentExtent, tangentExtent);
 
-            Vector2 point = v
+            contactPoints.add(v
                     .add(tangent.mult(clampedLateral - lateral))
-                    .add(referenceNormal.mult(depth / 2f)); // halfway between the vertex and the face
-
-            sum = sum.add(point);
-            count++;
+                    .add(referenceNormal.mult(depth / 2f))); // halfway between the vertex and the face
         }
 
-        Vector2 contactPoint = count > 0 ? sum.div(count) : centerA.add(delta.mult(0.5f));
+        if (contactPoints.isEmpty()) {
+            // numerically degenerate case: fall back to the middle between the two centres
+            contactPoints.add(centerA.add(delta.mult(0.5f)));
+        }
 
-        return new Collision(a, b, normal, minOverlap, contactPoint);
+        return new Collision(a, b, normal, minOverlap, contactPoints);
     }
 
     private static Vector2[] getVertices(Vector2 center, Vector2 axisX, Vector2 axisY, float halfWidth, float halfHeight) {

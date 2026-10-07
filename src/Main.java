@@ -17,8 +17,8 @@ void main() {
     Body floor = new Body(new Transform(new Vector2(0,0)), 5f);
     floor.setCollider(new BoxCollider(floor, 30.0f, 1.0f));
     floor.setRestitution(0f);
-    floor.setStaticFriction(0.6f);
-    floor.setDynamicFriction(0.4f);
+    floor.setStaticFriction(0.5f);
+    floor.setDynamicFriction(0.2f);
     floor.getRenderInfo().setColor(Color.GRAY);
     floor.setStatic(true);
 
@@ -47,27 +47,26 @@ void main() {
 
     // ########################################
 
-    Body light = new Body(new Transform(new Vector2(-10,15)), 5.0f);
-    light.setCollider(new CircleCollider(light, 1.0f));
-//    light.setCollider(new BoxCollider(light, 1.0f, 1.0f));
-    light.getRenderInfo().setColor(Color.BLUE);
-    light.setRestitution(0f);
-    light.setStaticFriction(0.6f);
-    light.setDynamicFriction(0.4f);
-    light.setVelocity(new Vector2(4f, 0f));
+    Color[] colors = {Color.RED, Color.GREEN, Color.BLUE, Color.YELLOW, Color.CYAN};
 
-    sim.addBody(light);
+    int numObjects = 10;
 
-    Body stick = new Body(new Transform(new Vector2(-10,10)), 5.0f);
-    stick.setCollider(new BoxCollider(stick, 5.0f, 1.0f));
-    stick.getRenderInfo().setColor(Color.RED);
-    stick.setRestitution(0f);
-    stick.setStaticFriction(0.6f);
-    stick.setDynamicFriction(0.4f);
+    // test multiple box stacking
+    for(int i = 0; i < numObjects; i++) {
+        // randomize position and size of the box
+        Random rand = new Random();
+        Vector2 position = new Vector2(rand.nextFloat() * 10 - 5, 1.5f + i * 2.5f);
+        Body box = new Body(new Transform( position), 1f);
 
-    stick.setVelocity(new Vector2(0f, 15f));
+//        box.setCollider(new BoxCollider(box, 1f, 1f));
+        box.setCollider(new CircleCollider(box, 0.5f));
+        box.setRestitution(0.75f);
+        box.setStaticFriction(0.6f);
+        box.setDynamicFriction(0.4f);
+        box.getRenderInfo().setColor(colors[i % colors.length]);
 
-    sim.addBody(stick);
+        sim.addBody(box);
+    }
 
     Renderer.run(() -> sim);
 }
