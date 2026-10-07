@@ -3,7 +3,6 @@ package math;
 public class Transform {
     private Vector2 position;
     private Vector2 rotation;
-    private Vector2 scale;
     private int z;
 
     public Transform() {
@@ -15,16 +14,15 @@ public class Transform {
     }
 
     public Transform(Transform other) {
-        this(other.position, other.rotation, other.scale, other.z);
+        this(other.position, other.rotation, other.z);
     }
 
     public Transform(Vector2 position, Vector2 rotation) {
-        this(position, rotation, new Vector2(1, 1), 0);
+        this(position, rotation, 0);
     }
 
-    public Transform(Vector2 position, Vector2 rotation, Vector2 scale, int z) {
+    public Transform(Vector2 position, Vector2 rotation, int z) {
         this.position = position;
-        this.scale = scale;
         this.rotation = rotation;
         this.z = z;
     }
@@ -35,10 +33,6 @@ public class Transform {
 
     public void setRotation(Vector2 rotation) {
         this.rotation = rotation;
-    }
-
-    public void setScale(Vector2 scale) {
-        this.scale = scale;
     }
 
     public void setZ(int z) {
@@ -53,10 +47,6 @@ public class Transform {
         return rotation;
     }
 
-    public Vector2 getScale() {
-        return scale;
-    }
-
     public int getZ() {
         return z;
     }
@@ -66,7 +56,6 @@ public class Transform {
         return "Transform{" +
                 "position=" + position +
                 ", rotation=" + rotation +
-                ", scale=" + scale +
                 ", z=" + z +
                 '}';
     }

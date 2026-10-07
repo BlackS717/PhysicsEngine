@@ -2,6 +2,7 @@ package rendering;
 
 import math.Vector2;
 import physics.Body;
+import physics.Collider;
 import simulation.Simulation;
 
 import javax.swing.JButton;
@@ -87,22 +88,39 @@ public class Renderer extends JPanel {
         g2.drawLine(0, originY, getWidth(), originY);
 
         for (Body body : simulation.getBodies()) {
-            if (body == null) continue;
+            drawBody(g2, body, originX, originY, pixelsPerMeter);
+        }
+    }
 
-            g2.setColor(body.getRenderInfo().getColor());
-            Vector2 pos = body.getTransform().getPosition();
-            Vector2 scale = body.getTransform().getScale();
+    private static void drawBody(Graphics2D g2, Body body, int originX, int originY, float pixelsPerMeter) {
+        if (body == null) return;
 
-            float bodyRadiusMeters = body.getRenderInfo().getRadius();
+        g2.setColor(body.getRenderInfo().getColor());
+        Vector2 pos = body.getTransform().getPosition();
 
+        // check the collider type and draw accordingly
+        Collider collider = body.getCollider();
+        if (collider instanceof physics.CircleCollider) {
+            float radiusMeters = ((physics.CircleCollider) collider).getRadius();
 
-            int width = Math.round(bodyRadiusMeters * pixelsPerMeter * scale.getX());
-            int height = Math.round(bodyRadiusMeters * pixelsPerMeter * scale.getY());
+            int r = Math.round(radiusMeters * pixelsPerMeter);
 
             int x = Math.round(originX + pos.getX() * pixelsPerMeter);
             int y = Math.round(originY - pos.getY() * pixelsPerMeter); // flip y: world up -> screen up
 
-            g2.fillOval(x - width, y - height, width * 2, height * 2);
+            g2.fillOval(x - r, y - r, r * 2, r * 2);
+
+        } else if (collider instanceof physics.BoxCollider) {
+            float halfWidthMeters = ((physics.BoxCollider) collider).getWidth() / 2;
+            float halfHeightMeters = ((physics.BoxCollider) collider).getHeight() / 2;
+
+            int width = Math.round(halfWidthMeters * pixelsPerMeter);
+            int height = Math.round(halfHeightMeters * pixelsPerMeter);
+
+            int x = Math.round(originX + pos.getX() * pixelsPerMeter);
+            int y = Math.round(originY - pos.getY() * pixelsPerMeter); // flip y: world up -> screen up
+
+            g2.fillRect(x - width, y - height, width * 2, height * 2);
         }
     }
 

@@ -18,6 +18,8 @@ public class Body {
     private final Vector2 initialVelocity;
     private final Vector2 initialAcceleration;
 
+    private Collider collider;
+
     private float mass;
     private float inverseMass;
 
@@ -48,6 +50,14 @@ public class Body {
         initialTransform = new Transform(transform);
         initialVelocity = new Vector2(velocity);
         initialAcceleration = new Vector2(acceleration);
+    }
+
+    public void setCollider(Collider collider){
+        this.collider = collider;
+    }
+
+    public Collider getCollider(){
+        return this.collider;
     }
 
     /***
@@ -146,19 +156,7 @@ public class Body {
         this.velocity = new Vector2(initialVelocity);
     }
 
-    public boolean isColliding(Body other){
-        Vector2 centerA = this.transform.getPosition();
-        Vector2 centerB = other.transform.getPosition();
-
-        Vector2 d = centerB.sub(centerA);
-
-        float radiusA = renderInfo.getRadius() * this.transform.getScale().getX();
-        float radiusB = other.renderInfo.getRadius() * other.transform.getScale().getX();
-
-        return d.getX() * d.getX() + d.getY() * d.getY() <= (radiusA + radiusB) * (radiusA + radiusB);
-    }
-
-     public boolean isStatic(){
+    public boolean isStatic(){
         return this.isStatic;
     }
 

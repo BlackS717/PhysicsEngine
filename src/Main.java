@@ -1,6 +1,8 @@
 import math.Transform;
 import math.Vector2;
 import physics.Body;
+import physics.BoxCollider;
+import physics.CircleCollider;
 import simulation.Simulation;
 import rendering.Renderer;
 
@@ -12,15 +14,16 @@ void main() {
     Simulation sim = new Simulation(60);
 
     Body light = new Body(new Transform(new Vector2(-4,25)), 5.0f);
+    light.setCollider(new CircleCollider(light, 1.0f));
     light.getRenderInfo().setColor(Color.BLUE);
     light.setRestitution(0f);
 //    light.setVelocity(new Vector2(5f, 0f));
 
     Body medium = new Body(new Transform(new Vector2(-3,0)), 5f);
+    medium.setCollider(new BoxCollider(medium, 3.0f, 1.0f));
     medium.getRenderInfo().setColor(Color.RED);
     medium.setStatic(true);
     medium.setRestitution(0.5f);
-    medium.getTransform().setScale(new Vector2(10, 1));
 
 
     sim.addBody(light);

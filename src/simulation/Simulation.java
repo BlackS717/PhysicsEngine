@@ -3,6 +3,7 @@ package simulation;
 import math.Vector2;
 import physics.Body;
 import physics.Collision;
+import physics.CollisionDetector;
 
 import java.util.*;
 
@@ -48,11 +49,10 @@ public class Simulation {
             Body current = bodies.get(i);
             for(int j = i+1; j < bodies.size(); j++){
                 Body other = bodies.get(j);
-
-                if(current.isColliding(other)){
-                    collisionPairs.add(new Collision(current, other));
+                Collision collision = CollisionDetector.detectCollision(current.getCollider(), other.getCollider());
+                if(collision != null){
+                    collisionPairs.add(collision);
                 }
-
             }
         }
 
