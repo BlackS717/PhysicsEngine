@@ -2,6 +2,8 @@ package rendering;
 
 import math.Vector2;
 import physics.Body;
+import physics.BoxCollider;
+import physics.CircleCollider;
 import physics.Collider;
 import simulation.Simulation;
 
@@ -14,16 +16,17 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
-import java.awt.GraphicsEnvironment;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.GraphicsEnvironment;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.util.function.Supplier;
 
 /**
- * Simple Swing renderer that steps a Simulation at its fps and draws every body as a circle.
+ * Simple Swing renderer that steps a Simulation at its fps and draws every body.
  * World space: meters, y pointing up, origin at the bottom-center of the view (on the ground line).
+ * Rotation: radians, counter-clockwise (y up), 0 = pointing along +x.
  */
 public class Renderer extends JPanel {
     private static final int GROUND_MARGIN_PX = 30;
@@ -33,7 +36,6 @@ public class Renderer extends JPanel {
     private Simulation simulation;
 
     private final float pixelsPerMeter;
-//    private final float bodyRadiusMeters = 1.0f;
 
     /**
      * @param simulationFactory builds a fresh simulation in its initial state; called once now and again on every reset
@@ -65,7 +67,6 @@ public class Renderer extends JPanel {
     public void reset() {
         timer.stop();
         simulation = simulationFactory.get();
-        simulation.reset();
         repaint();
     }
 
@@ -92,36 +93,51 @@ public class Renderer extends JPanel {
         }
     }
 
-    private static void drawBody(Graphics2D g2, Body body, int originX, int originY, float pixelsPerMeter) {
+    private static void drawBody(Graphics2D g, Body body, int originX, int originY, float pixelsPerMeter) {
         if (body == null) return;
 
-        g2.setColor(body.getRenderInfo().getColor());
-        Vector2 pos = body.getTransform().getPosition();
-
-        // check the collider type and draw accordingly
         Collider collider = body.getCollider();
-        if (collider instanceof physics.CircleCollider) {
-            float radiusMeters = ((physics.CircleCollider) collider).getRadius();
+        if (collider == null) return;
 
-            int r = Math.round(radiusMeters * pixelsPerMeter);
+        Vector2 pos = body.getTransform().getPosition();
+        float angle = body.getTransform().getRotation();
 
-            int x = Math.round(originX + pos.getX() * pixelsPerMeter);
-            int y = Math.round(originY - pos.getY() * pixelsPerMeter); // flip y: world up -> screen up
+        int x = Math.round(originX + pos.getX() * pixelsPerMeter);
+        int y = Math.round(originY - pos.getY() * pixelsPerMeter); // flip y: world up -> screen up
 
-            g2.fillOval(x - r, y - r, r * 2, r * 2);
+        // work on a copy so the translate/rotate never leaks into other bodies
+        Graphics2D g2 = (Graphics2D) g.create();
+        try {
+            g2.translate(x, y);
+            g2.rotate(-angle); // minus: screen y is flipped, so counter-clockwise becomes negative
 
-        } else if (collider instanceof physics.BoxCollider) {
-            float halfWidthMeters = ((physics.BoxCollider) collider).getWidth() / 2;
-            float halfHeightMeters = ((physics.BoxCollider) collider).getHeight() / 2;
+            Color color = body.getRenderInfo().getColor();
+            g2.setColor(color);
 
-            int width = Math.round(halfWidthMeters * pixelsPerMeter);
-            int height = Math.round(halfHeightMeters * pixelsPerMeter);
+            if (collider instanceof CircleCollider) {
+                int r = Math.round(((CircleCollider) collider).getRadius() * pixelsPerMeter);
 
-            int x = Math.round(originX + pos.getX() * pixelsPerMeter);
-            int y = Math.round(originY - pos.getY() * pixelsPerMeter); // flip y: world up -> screen up
+                g2.fillOval(-r, -r, r * 2, r * 2);
 
-            g2.fillRect(x - width, y - height, width * 2, height * 2);
+                // radius line so the rotation is visible on a circle
+                g2.setColor(contrastColor(color));
+                g2.drawLine(0, 0, r, 0);
+
+            } else if (collider instanceof BoxCollider) {
+                int halfW = Math.round(((BoxCollider) collider).getWidth() / 2 * pixelsPerMeter);
+                int halfH = Math.round(((BoxCollider) collider).getHeight() / 2 * pixelsPerMeter);
+
+                g2.fillRect(-halfW, -halfH, halfW * 2, halfH * 2);
+            }
+        } finally {
+            g2.dispose();
         }
+    }
+
+    /** Black on bright colours, white on dark ones, so the rotation marker is always visible. */
+    private static Color contrastColor(Color c) {
+        int luminance = (c.getRed() * 299 + c.getGreen() * 587 + c.getBlue() * 114) / 1000;
+        return luminance > 128 ? Color.BLACK : Color.WHITE;
     }
 
     /**

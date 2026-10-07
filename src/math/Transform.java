@@ -2,7 +2,7 @@ package math;
 
 public class Transform {
     private Vector2 position;
-    private Vector2 rotation;
+    private float rotation; // radians, counter-clockwise (y up), 0 = pointing along +x
     private int z;
 
     public Transform() {
@@ -10,18 +10,19 @@ public class Transform {
     }
 
     public Transform(Vector2 position) {
-        this(position, new Vector2(0, 0));
+        this(position, 0f);
     }
 
+    /** Deep copy, so the copy never shares a mutable Vector2 with the original. */
     public Transform(Transform other) {
-        this(other.position, other.rotation, other.z);
+        this(new Vector2(other.position), other.rotation, other.z);
     }
 
-    public Transform(Vector2 position, Vector2 rotation) {
+    public Transform(Vector2 position, float rotation) {
         this(position, rotation, 0);
     }
 
-    public Transform(Vector2 position, Vector2 rotation, int z) {
+    public Transform(Vector2 position, float rotation, int z) {
         this.position = position;
         this.rotation = rotation;
         this.z = z;
@@ -31,8 +32,13 @@ public class Transform {
         this.position = position;
     }
 
-    public void setRotation(Vector2 rotation) {
+    public void setRotation(float rotation) {
         this.rotation = rotation;
+    }
+
+    /** Adds to the current rotation (radians). */
+    public void rotate(float deltaRadians) {
+        this.rotation += deltaRadians;
     }
 
     public void setZ(int z) {
@@ -43,7 +49,7 @@ public class Transform {
         return position;
     }
 
-    public Vector2 getRotation() {
+    public float getRotation() {
         return rotation;
     }
 
