@@ -14,6 +14,10 @@ public class Transform {
         this(position, new Vector2(0, 0));
     }
 
+    public Transform(Transform other) {
+        this(other.position, other.rotation, other.scale, other.z);
+    }
+
     public Transform(Vector2 position, Vector2 rotation) {
         this(position, rotation, new Vector2(1, 1), 0);
     }

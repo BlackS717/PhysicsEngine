@@ -8,6 +8,10 @@ public class Vector2 {
         this.y = y;
     }
 
+    public Vector2(Vector2 other) {
+        this(other.getX(), other.getY());
+    }
+
     public float getX() {
         return x;
     }
@@ -55,5 +59,9 @@ public class Vector2 {
 
     public float dotProduct(Vector2 v) {
         return x * v.getX() + y * v.getY();
+    }
+
+    public float magnitude() {
+        return (float) Math.sqrt(x * x + y * y);
     }
 }

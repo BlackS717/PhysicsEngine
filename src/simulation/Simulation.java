@@ -2,17 +2,16 @@ package simulation;
 
 import math.Vector2;
 import physics.Body;
+import physics.Collision;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 public class Simulation {
-    private int fps;
+    private final int fps;
 
-    private Vector2 gravitationalAcceleration = new Vector2(0, -9.81f);
+    private final Vector2 gravitationalAcceleration = new Vector2(0, -9.81f);
 
-    private List<Body> bodies = new ArrayList<>();
+    private final List<Body> bodies = new ArrayList<>();
 
     public Simulation(int fps){
         this.fps = fps;
@@ -21,7 +20,9 @@ public class Simulation {
     private void updateBody(Body body, float dt){
         if(body == null) return;
 
-        body.applyForces(getGravitationalForce(body), new Vector2(5.0f, 0f));
+        Vector2 gravitationalForce = getGravitationalForce(body);
+
+        body.applyForces(gravitationalForce);
 
         body.integrate(dt);
     }
@@ -35,9 +36,41 @@ public class Simulation {
     public void step(){
         float dt = 1.0f / fps;
 
-        // loop through all body and update them
+        // Update all body
+        for(int i = 0; i < bodies.size(); i ++){
+            Body current = bodies.get(i);
+            updateBody(current, dt);
+        }
+
+        List<Collision> collisionPairs= new ArrayList<>();
+        // store collisions
+        for(int i = 0; i < bodies.size(); i++){
+            Body current = bodies.get(i);
+            for(int j = i+1; j < bodies.size(); j++){
+                Body other = bodies.get(j);
+
+                if(current.isColliding(other)){
+                    collisionPairs.add(new Collision(current, other));
+                }
+
+            }
+        }
+
+        // resolve collisions
+        for(Collision collision: collisionPairs){
+            // positional correction
+            collision.correctPositions();
+
+            // velocity correction
+
+
+        }
+
+    }
+
+    public void reset(){
         for(Body body: bodies){
-            updateBody(body, dt);
+            body.reset();
         }
     }
 
