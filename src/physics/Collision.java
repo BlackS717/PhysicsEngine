@@ -12,6 +12,13 @@ import java.util.List;
  *
  * Typical use per step: call resolveVelocities() a few times, then correctPositions() once.
  */
+
+
+/* TODO: need to be updated to use continuous collision detection (CCD) to prevent tunneling at high speeds.
+    Currently, if a body moves fast enough to pass through another body in one step,
+    the collision is missed and the bodies overlap. CCD would require calculating the time of impact and resolving the collision at that point,
+    which is more complex.
+*/
 public class Collision {
     // positional correction tuning: fix 80% of the overlap, ignore tiny overlaps to avoid jitter
     private static final float CORRECTION_PERCENT = 0.8f;
