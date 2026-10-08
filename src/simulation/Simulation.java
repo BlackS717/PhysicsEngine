@@ -23,7 +23,7 @@ public class Simulation {
     private final int fps;
 
     private final Vector2 gravitationalAcceleration = new Vector2(0, -9.81f);
-    private final float airDensity = 1.225f; // kg/m^3   for now we'll use F = -airdensity * speed²
+    private final float airDensity = 1.225f; // 1.225 kg/m^3   for now we'll use F = -airdensity * speed²
 
     private final List<Body> bodies = new ArrayList<>();
 

@@ -146,7 +146,7 @@ public class Renderer extends JPanel {
      */
     public static void run(Supplier<Simulation> simulationFactory) {
         SwingUtilities.invokeLater(() -> {
-            Renderer renderer = new Renderer(simulationFactory, 800, 600, 20f);
+            Renderer renderer = new Renderer(simulationFactory, 1200, 900, 20f);
 
             JPanel controls = getControls(renderer);
 
