@@ -11,62 +11,71 @@ import java.awt.*;
 //TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 void main() {
-    Simulation sim = new Simulation(60);
+    Renderer.run(() -> {
+        Simulation sim = new Simulation(240);
 
-    // Add static bodies to the simulation to create a box for the light to bounce around in
-    Body floor = new Body(new Transform(new Vector2(0,0)), 5f);
-    floor.setCollider(new BoxCollider(floor, 30.0f, 1.0f));
-    floor.setRestitution(0f);
-    floor.setStaticFriction(0.5f);
-    floor.setDynamicFriction(0.2f);
-    floor.getRenderInfo().setColor(Color.GRAY);
-    floor.setStatic(true);
+        // Add static bodies to the simulation to create a box for the light to bounce around in
+        Body floor = new Body(new Transform(new Vector2(0,0)), 5f);
+        floor.setCollider(new BoxCollider(floor, 30.0f, 1.0f));
+        floor.setRestitution(0f);
+        floor.setStaticFriction(0.5f);
+        floor.setDynamicFriction(0.2f);
+        floor.getRenderInfo().setColor(Color.GRAY);
+        floor.setStatic(true);
 
-    Body rightWall = new Body(new Transform(new Vector2(15,15)), 5f);
-    rightWall.setCollider(new BoxCollider(rightWall, 1.0f, 30.0f));
-    rightWall.setRestitution(1f);
-    rightWall.getRenderInfo().setColor(Color.GRAY);
-    rightWall.setStatic(true);
+        Body rightWall = new Body(new Transform(new Vector2(15,15)), 5f);
+        rightWall.setCollider(new BoxCollider(rightWall, 1.0f, 30.0f));
+        rightWall.setRestitution(1f);
+        rightWall.getRenderInfo().setColor(Color.GRAY);
+        rightWall.setStatic(true);
 
-    Body leftWall = new Body(new Transform(new Vector2(-15,15)), 5f);
-    leftWall.setCollider(new BoxCollider(leftWall, 1.0f, 30.0f));
-    leftWall.setRestitution(1f);
-    leftWall.getRenderInfo().setColor(Color.GRAY);
-    leftWall.setStatic(true);
+        Body leftWall = new Body(new Transform(new Vector2(-15,15)), 5f);
+        leftWall.setCollider(new BoxCollider(leftWall, 1.0f, 30.0f));
+        leftWall.setRestitution(1f);
+        leftWall.getRenderInfo().setColor(Color.GRAY);
+        leftWall.setStatic(true);
 
-    Body ceiling = new Body(new Transform(new Vector2(0,25)), 5f);
-    ceiling.setCollider(new BoxCollider(ceiling, 30.0f, 1.0f));
-    ceiling.setRestitution(0.5f);
-    ceiling.getRenderInfo().setColor(Color.GRAY);
-    ceiling.setStatic(true);
+        // rotate left and right walls to make a cuve shape
+        leftWall.getTransform().setRotation((float)Math.toRadians(15));
+        rightWall.getTransform().setRotation((float)Math.toRadians(-15));
 
-    sim.addBody(floor);
-    sim.addBody(rightWall);
-    sim.addBody(leftWall);
-    sim.addBody(ceiling);
 
-    // ########################################
 
-    Color[] colors = {Color.RED, Color.GREEN, Color.BLUE, Color.YELLOW, Color.CYAN};
+//    Body ceiling = new Body(new Transform(new Vector2(0,25)), 5f);
+//    ceiling.setCollider(new BoxCollider(ceiling, 30.0f, 1.0f));
+//    ceiling.setRestitution(0.5f);
+//    ceiling.getRenderInfo().setColor(Color.GRAY);
+//    ceiling.setStatic(true);
 
-    int numObjects = 10;
+        sim.addBody(floor);
+        sim.addBody(rightWall);
+        sim.addBody(leftWall);
+//    sim.addBody(ceiling);
 
-    // test multiple box stacking
-    for(int i = 0; i < numObjects; i++) {
-        // randomize position and size of the box
+        // ########################################
+
+        Color[] colors = {Color.RED, Color.GREEN, Color.BLUE, Color.YELLOW, Color.CYAN};
+
         Random rand = new Random();
-        Vector2 position = new Vector2(rand.nextFloat() * 10 - 5, 1.5f + i * 2.5f);
-        Body box = new Body(new Transform( position), 1f);
+        int numObjects = 100;
 
-//        box.setCollider(new BoxCollider(box, 1f, 1f));
-        box.setCollider(new CircleCollider(box, 0.5f));
-        box.setRestitution(0.75f);
-        box.setStaticFriction(0.6f);
-        box.setDynamicFriction(0.4f);
-        box.getRenderInfo().setColor(colors[i % colors.length]);
+        // test multiple box stacking
+        for(int i = 0; i < numObjects; i++) {
+            // randomize position and size of the box
+            Vector2 position = new Vector2(rand.nextFloat() * 10 - 5, 15f + i * 2.5f);
+            float randomMass = 0.5f + rand.nextFloat() * 2.0f;
+            float randomSize = 0.2f + rand.nextFloat() * 0.5f;
+            Body box = new Body(new Transform( position), randomMass);
 
-        sim.addBody(box);
-    }
+//        box.setCollider(new BoxCollider(box, 3f, 1.5f));
+            box.setCollider(new CircleCollider(box, randomSize));
+            box.setRestitution(0.5f);
+            box.setStaticFriction(0.2f);
+            box.setDynamicFriction(0f);
+            box.getRenderInfo().setColor(colors[i % colors.length]);
 
-    Renderer.run(() -> sim);
+            sim.addBody(box);
+        }
+        return sim;
+    });
 }

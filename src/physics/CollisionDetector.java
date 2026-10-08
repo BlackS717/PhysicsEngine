@@ -15,21 +15,29 @@ public class CollisionDetector {
     private static final float AXIS_TOLERANCE = 0.0005f;
 
     public static Collision detectCollision(Collider collider1, Collider collider2) {
+        return detectCollision(collider1, collider2, 0f);
+    }
+
+    /**
+     * @param margin shapes closer than this still count as colliding (the penetration is then negative).
+     *               Used for pairs that continuous collision detection moved back to their time of impact.
+     */
+    public static Collision detectCollision(Collider collider1, Collider collider2, float margin) {
         if (collider1 instanceof CircleCollider && collider2 instanceof CircleCollider) {
-            return detectCircleCollision((CircleCollider) collider1, (CircleCollider) collider2);
+            return detectCircleCollision((CircleCollider) collider1, (CircleCollider) collider2, margin);
         }
         else if (collider1 instanceof CircleCollider && collider2 instanceof BoxCollider) {
-            return detectCircleBoxCollision((CircleCollider) collider1, (BoxCollider) collider2);
+            return detectCircleBoxCollision((CircleCollider) collider1, (BoxCollider) collider2, margin);
         }
         else if (collider1 instanceof BoxCollider && collider2 instanceof CircleCollider) {
-            Collision c = detectCircleBoxCollision((CircleCollider) collider2, (BoxCollider) collider1);
+            Collision c = detectCircleBoxCollision((CircleCollider) collider2, (BoxCollider) collider1, margin);
             if (c == null) return null;
 
             // re-express the result in the caller's order: (box, circle), normal box -> circle
             return new Collision(collider1, collider2, c.getNormal().mult(-1), c.getPenetration(), c.getContactPoints());
         }
         else if (collider1 instanceof BoxCollider && collider2 instanceof BoxCollider) {
-            return detectBoxBoxCollision((BoxCollider) collider1, (BoxCollider) collider2);
+            return detectBoxBoxCollision((BoxCollider) collider1, (BoxCollider) collider2, margin);
         }
 
         return null; // unsupported collider type
@@ -37,12 +45,12 @@ public class CollisionDetector {
 
     // ---------------------------------------------------------------- circle vs circle
 
-    private static Collision detectCircleCollision(CircleCollider circle1, CircleCollider circle2) {
+    private static Collision detectCircleCollision(CircleCollider circle1, CircleCollider circle2, float margin) {
         Vector2 distanceVector = circle2.getCenter().sub(circle1.getCenter());
         float distance = distanceVector.magnitude();
         float radiusSum = circle1.getRadius() + circle2.getRadius();
 
-        if (distance > radiusSum) {
+        if (distance > radiusSum + margin) {
             return null;
         }
 
@@ -58,7 +66,7 @@ public class CollisionDetector {
 
     // ---------------------------------------------------------------- circle vs (rotated) box
 
-    private static Collision detectCircleBoxCollision(CircleCollider circle, BoxCollider rectangle) {
+    private static Collision detectCircleBoxCollision(CircleCollider circle, BoxCollider rectangle, float margin) {
         Vector2 circleCenter = circle.getCenter();
         float radius = circle.getRadius();
 
@@ -77,7 +85,8 @@ public class CollisionDetector {
         Vector2 diff = local.sub(closestLocal);
         float distanceSquared = diff.dotProduct(diff); // real squared distance
 
-        if (distanceSquared > radius * radius) {
+        float reach = radius + margin;
+        if (distanceSquared > reach * reach) {
             return null;
         }
 
@@ -136,7 +145,7 @@ public class CollisionDetector {
      * the boxes there is no collision; otherwise the axis with the smallest overlap is the collision normal.
      * Contact points are the incident box's vertices that sank past the reference face (2 for a flat landing).
      */
-    private static Collision detectBoxBoxCollision(BoxCollider a, BoxCollider b) {
+    private static Collision detectBoxBoxCollision(BoxCollider a, BoxCollider b, float margin) {
         Vector2 centerA = a.getCenter();
         Vector2 centerB = b.getCenter();
 
@@ -167,8 +176,8 @@ public class CollisionDetector {
 
             float overlap = radiusA + radiusB - Math.abs(delta.dotProduct(axis));
 
-            if (overlap < 0) {
-                return null; // found a separating axis
+            if (overlap < -margin) {
+                return null; // found a separating axis (wider than the margin)
             }
 
             if (overlap < minOverlap - AXIS_TOLERANCE) {
@@ -209,7 +218,7 @@ public class CollisionDetector {
 
         for (Vector2 v : incidentVertices) {
             float depth = planeOffset - v.dotProduct(referenceNormal);
-            if (depth < 0) continue; // this vertex is still outside the reference face
+            if (depth < -margin) continue; // this vertex is still outside the reference face
 
             // keep the point within the reference face's length
             float lateral = v.sub(referenceCenter).dotProduct(tangent);

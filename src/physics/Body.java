@@ -21,6 +21,10 @@ public class Body {
     private final float initialAngularVelocity;
     private final float initialAngularAcceleration;
 
+    // pose at the start of the last integrate() call, used by continuous collision detection
+    private Vector2 previousPosition;
+    private float previousRotation;
+
     private Collider collider;
 
     private float mass;
@@ -67,6 +71,9 @@ public class Body {
         initialAcceleration = new Vector2(acceleration);
         initialAngularVelocity = angularVelocity;
         initialAngularAcceleration = angularAcceleration;
+
+        previousPosition = new Vector2(transform.getPosition());
+        previousRotation = transform.getRotation();
     }
 
     public void setCollider(Collider collider) {
@@ -83,6 +90,9 @@ public class Body {
      * */
     public void integrate(float dt) {
         if (isStatic) return;
+
+        previousPosition = new Vector2(transform.getPosition());
+        previousRotation = transform.getRotation();
 
         updatePosition(dt);
         updateRotation(dt);
@@ -281,6 +291,33 @@ public class Body {
         this.velocity = new Vector2(initialVelocity);
         this.angularVelocity = initialAngularVelocity;
         this.angularAcceleration = initialAngularAcceleration;
+
+        this.previousPosition = new Vector2(this.transform.getPosition());
+        this.previousRotation = this.transform.getRotation();
+    }
+
+    public boolean isStatic() {
+        return this.isStatic;
+    }
+
+    /** Position at the start of the last integrate() call (the current position for bodies that never moved). */
+    public Vector2 getPreviousPosition() {
+        return previousPosition;
+    }
+
+    /** Rotation (radians) at the start of the last integrate() call. */
+    public float getPreviousRotation() {
+        return previousRotation;
+    }
+
+    /**
+     * Moves the body back to where it was fraction t (0..1) of the way through the last integrate() step:
+     * 0 = where it started, 1 = where it ended up. Used by continuous collision detection.
+     */
+    public void moveToFractionOfLastStep(float t) {
+        Vector2 end = transform.getPosition();
+        transform.setPosition(previousPosition.add(end.sub(previousPosition).mult(t)));
+        transform.setRotation(previousRotation + (transform.getRotation() - previousRotation) * t);
     }
 
     public void setStatic(boolean isStatic) {
