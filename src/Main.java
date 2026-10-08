@@ -22,7 +22,9 @@ import java.awt.*;
  *     7. rigid chain                  segments with a fixed length, swinging from a static anchor
  *     8. suspended platform           soft segments hanging a rigid one; the ball hits near the left end, so the
  *                                     impact is shared unevenly between its two end bodies
- *     9. two cantilever beams         bend joints: welded (rigidity 1) vs soft (rigidity 0.5), same load
+ *     9. two cantilever beams         bend joints: welded (rigidity 1) vs soft (rigidity 0.75), same load.
+ *                                     Each is mounted on the wall by a static segment and a joint, otherwise
+ *                                     the first link could swing freely like a pendulum
  *
  *   the three frames (5), left to right
  *     green  braced truss: 4 sides + 2 diagonals, all soft springs (the crossing diagonals ignore each other)
@@ -30,7 +32,7 @@ import java.awt.*;
  *     red    4 soft sides only: no corner joints, so it collapses into a rhombus and stays that way
  */
 void main() {
-    Renderer.run(this::buildScene);
+    Renderer.run(() -> buildScene());
 }
 
         Simulation buildScene() {
@@ -155,19 +157,19 @@ void main() {
             Body base = anchor(16.5f, 0.9f, Color.DARK_GRAY);
 
             // a box platform on top of the spring (a body that already has a collider keeps it)
-            Body platform = new Body(new Transform(new Vector2(16.5f, 5.4f)), 1f);
+            Body platform = new Body(new Transform(new Vector2(16.5f, 5.8f)), 1f);
             platform.setCollider(new BoxCollider(platform, 3f, 0.4f));
             platform.setRestitution(0f);
             platform.getRenderInfo().setColor(new Color(255, 190, 0));
 
-            // rest length 6, but the platform starts only 4.5 above the base: the spring starts compressed by 1.5 m
+            // rest length 6, but the platform starts only 4.9 above the base: the spring starts compressed by 1.1 m
             // rigidity 0.45 is about 1.6 Hz, elasticity 0.95 means it hardly loses energy: it flings the ball
             Segment spring = new Segment(base, platform, 6f, 0.3f);
             spring.setRigidity(0.45f);
             spring.setElasticity(0.95f);
             sim.addSegment(spring);
 
-            ball(sim, 16.5f, 6.1f, 0.4f, 0.2f, 0.3f, Color.WHITE);
+            ball(sim, 16.5f, 6.5f, 0.4f, 0.2f, 0.3f, Color.WHITE);
         }
 
 // ---------------------------------------------------------------- 7. rigid chain
@@ -180,8 +182,8 @@ void main() {
                 float x = -12.5f + 1.2f * i;
                 Body next = (i < 5)
                         ? node(x, 25.5f, 0.5f, 0.1f, new Color(0, 170, 220))
-                        : ball(sim, x, 25.5f, 0.6f, 3f, 0.1f, new Color(0, 170, 220)); // heavy bob at the end
-                link(sim, previous, next, 0.3f, 0.8f, 1f);
+                        : ball(sim, x, 25.5f, 0.6f, 2f, 0.1f, new Color(0, 170, 220)); // heavy bob at the end
+                link(sim, previous, next, 0.3f, 1f, 0.8f);
                 previous = next;
             }
         }
@@ -196,30 +198,31 @@ void main() {
             Body right = node(4.5f, 22.5f, 1f, 0.1f, Color.ORANGE);
 
             // two soft springs (about 1.9 Hz) hold the platform up
-            Segment leftLink = link(sim, leftAnchor, left, 0.2f, 0.6f, 0.8f);
-            Segment rightLink = link(sim, rightAnchor, right, 0.2f, 0.6f, 0.8f);
-
-//            sim.ignoreCollisions(leftLink.getMiddleBody());
-//            sim.ignoreCollisions(rightLink.getMiddleBody());
+            link(sim, leftAnchor, left, 0.2f, 0.5f, 0.85f);
+            link(sim, rightAnchor, right, 0.2f, 0.5f, 0.85f);
 
             // the platform itself is a rigid segment: a hit on it is shared between its two end bodies by where it lands
             Segment platform = link(sim, left, right, 0.5f, 1f, 0.8f);
             platform.getMiddleBody().getRenderInfo().setColor(Color.ORANGE);
 
             // lands about a sixth of the way along: the left end takes about five times as much of the impulse
-            ball(sim, -0.5f, 26.5f, 0.5f, 15f, 0.3f, Color.WHITE);
+            ball(sim, -0.5f, 26.5f, 0.5f, 1.5f, 0.3f, Color.WHITE);
         }
 
 // ---------------------------------------------------------------- 9. bend joints: welded vs soft
 
         void buildBeams(Simulation sim) {
             buildBeam(sim, 21f, 1f, new Color(70, 110, 255));    // welded joints: stays straight under the load
-            buildBeam(sim, 17.5f, 0.1f, new Color(240, 70, 70)); // soft joints (about 1.9 Hz): sags and bounces
+            buildBeam(sim, 17.5f, 0.75f, new Color(240, 70, 70)); // soft joints (about 5 Hz): sags about 1 m and bounces
         }
 
         void buildBeam(Simulation sim, float y, float jointRigidity, Color color) {
             Body previous = anchor(18.6f, y, Color.DARK_GRAY);
-            Segment previousSegment = null;
+
+            // the mount: a static segment pointing up the wall. The joint between it and the first link is what holds
+            // the beam out horizontally (without it the first link would swing around the anchor like a pendulum)
+            Body mountTop = anchor(18.6f, y + 1.2f, Color.DARK_GRAY);
+            Segment previousSegment = link(sim, previous, mountTop, 0.3f, 1f, 0.8f);
 
             for (int i = 1; i <= 3; i++) {
                 float x = 18.6f - 2f * i;
@@ -294,6 +297,7 @@ void main() {
             Segment segment = new Segment(a, b, thickness);
             segment.setRigidity(rigidity);
             segment.setElasticity(elasticity);
+            segment.getMiddleBody().getRenderInfo().setColor(b.getRenderInfo().getColor());
             sim.addSegment(segment);
             return segment;
         }
