@@ -36,6 +36,7 @@ public class Simulation {
 
     // pairs that must never collide (the parts of one segment, neighbouring segments in a chain)
     private final Set<BodyPair> ignoredPairs = new HashSet<>();
+    private final Set<Body> ignoredBodies = new HashSet<>();
 
     // continuous collision detection: stops fast bodies from skipping over thin ones between two frames
     private boolean continuousCollisionEnabled = true;
@@ -238,7 +239,9 @@ public class Simulation {
     }
 
     private boolean isIgnored(Body a, Body b) {
-        return !ignoredPairs.isEmpty() && ignoredPairs.contains(new BodyPair(a, b));
+        return (!ignoredPairs.isEmpty() && ignoredPairs.contains(new BodyPair(a, b)))
+                || ignoredBodies.contains(a)
+                || ignoredBodies.contains(b);
     }
 
     /**
@@ -248,6 +251,14 @@ public class Simulation {
     public void ignoreCollisions(Body a, Body b) {
         ignoredPairs.add(new BodyPair(a, b));
         ignoredPairs.add(new BodyPair(b, a));
+    }
+
+    /** Makes all collisions of a body ignored. Needed for the middle box of a segment, which is already
+     *  constrained by its two end bodies.
+     *
+     *  */
+    public void ignoreCollisions(Body b){
+        ignoredBodies.add(b);
     }
 
     public void reset() {

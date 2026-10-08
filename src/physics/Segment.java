@@ -226,6 +226,7 @@ public class Segment {
         while (angle - previousAngle > Math.PI) previousAngle += (float) (2 * Math.PI);
         while (angle - previousAngle < -Math.PI) previousAngle -= (float) (2 * Math.PI);
 
+
         middle.setPreviousPose(previousA.add(previousB).mult(0.5f), previousAngle);
     }
 

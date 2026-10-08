@@ -30,7 +30,7 @@ import java.awt.*;
  *     red    4 soft sides only: no corner joints, so it collapses into a rhombus and stays that way
  */
 void main() {
-    Renderer.run(() -> buildScene());
+    Renderer.run(this::buildScene);
 }
 
         Simulation buildScene() {
@@ -180,8 +180,8 @@ void main() {
                 float x = -12.5f + 1.2f * i;
                 Body next = (i < 5)
                         ? node(x, 25.5f, 0.5f, 0.1f, new Color(0, 170, 220))
-                        : ball(sim, x, 25.5f, 0.6f, 2f, 0.1f, new Color(0, 170, 220)); // heavy bob at the end
-                link(sim, previous, next, 0.3f, 1f, 0.8f);
+                        : ball(sim, x, 25.5f, 0.6f, 3f, 0.1f, new Color(0, 170, 220)); // heavy bob at the end
+                link(sim, previous, next, 0.3f, 0.8f, 1f);
                 previous = next;
             }
         }
@@ -196,22 +196,25 @@ void main() {
             Body right = node(4.5f, 22.5f, 1f, 0.1f, Color.ORANGE);
 
             // two soft springs (about 1.9 Hz) hold the platform up
-            link(sim, leftAnchor, left, 0.2f, 0.5f, 0.85f);
-            link(sim, rightAnchor, right, 0.2f, 0.5f, 0.85f);
+            Segment leftLink = link(sim, leftAnchor, left, 0.2f, 0.6f, 0.8f);
+            Segment rightLink = link(sim, rightAnchor, right, 0.2f, 0.6f, 0.8f);
+
+            sim.ignoreCollisions(leftLink.getMiddleBody());
+            sim.ignoreCollisions(rightLink.getMiddleBody());
 
             // the platform itself is a rigid segment: a hit on it is shared between its two end bodies by where it lands
             Segment platform = link(sim, left, right, 0.5f, 1f, 0.8f);
             platform.getMiddleBody().getRenderInfo().setColor(Color.ORANGE);
 
             // lands about a sixth of the way along: the left end takes about five times as much of the impulse
-            ball(sim, -0.5f, 26.5f, 0.5f, 1.5f, 0.3f, Color.WHITE);
+            ball(sim, -0.5f, 26.5f, 0.5f, 15f, 0.3f, Color.WHITE);
         }
 
 // ---------------------------------------------------------------- 9. bend joints: welded vs soft
 
         void buildBeams(Simulation sim) {
             buildBeam(sim, 21f, 1f, new Color(70, 110, 255));    // welded joints: stays straight under the load
-            buildBeam(sim, 17.5f, 0.5f, new Color(240, 70, 70)); // soft joints (about 1.9 Hz): sags and bounces
+            buildBeam(sim, 17.5f, 0.1f, new Color(240, 70, 70)); // soft joints (about 1.9 Hz): sags and bounces
         }
 
         void buildBeam(Simulation sim, float y, float jointRigidity, Color color) {
