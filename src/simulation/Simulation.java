@@ -7,6 +7,7 @@ import physics.CollisionDetector;
 import physics.ContinuousCollision;
 import physics.Segment;
 import physics.SegmentBody;
+import physics.SegmentJoint;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -31,6 +32,7 @@ public class Simulation {
 
     private final List<Body> bodies = new ArrayList<>();
     private final List<Segment> segments = new ArrayList<>();
+    private final List<SegmentJoint> joints = new ArrayList<>();
 
     // pairs that must never collide (the parts of one segment, neighbouring segments in a chain)
     private final Set<BodyPair> ignoredPairs = new HashSet<>();
@@ -86,10 +88,19 @@ public class Simulation {
         for (Collision collision : collisions) {
             collision.prepare();
         }
+        for (Segment segment : segments) {
+            segment.prepare(dt);
+        }
+        for (SegmentJoint joint : joints) {
+            joint.prepare(dt);
+        }
 
         for (int i = 0; i < SOLVER_ITERATIONS; i++) {
             for (Segment segment : segments) {
                 segment.solveVelocityConstraint();
+            }
+            for (SegmentJoint joint : joints) {
+                joint.solveVelocityConstraint();
             }
 
             if (i % 2 == 0) {
@@ -113,10 +124,14 @@ public class Simulation {
             collision.correctPositions();
         }
 
-        // 7. bring every segment back to its exact length, then place its middle box
+        // 7. bring rigid segments back to their exact length and rigid joints back to their angle
+        //    (soft ones are left alone: their springs pull them back), then place the middle boxes
         for (int i = 0; i < SEGMENT_POSITION_ITERATIONS; i++) {
             for (Segment segment : segments) {
                 segment.solvePositionConstraint();
+            }
+            for (SegmentJoint joint : joints) {
+                joint.solvePositionConstraint();
             }
         }
         updateSegments();
@@ -226,7 +241,11 @@ public class Simulation {
         return !ignoredPairs.isEmpty() && ignoredPairs.contains(new BodyPair(a, b));
     }
 
-    private void ignoreCollisions(Body a, Body b) {
+    /**
+     * Makes two bodies never collide with each other. Needed for parts of a structure that cross or overlap
+     * without being neighbours, e.g. the two diagonals of a square (use the segments' middle bodies).
+     */
+    public void ignoreCollisions(Body a, Body b) {
         ignoredPairs.add(new BodyPair(a, b));
         ignoredPairs.add(new BodyPair(b, a));
     }
@@ -291,6 +310,8 @@ public class Simulation {
     public void removeSegment(Segment segment) {
         if (!segments.remove(segment)) return;
 
+        joints.removeIf(joint -> joint.getFirst() == segment || joint.getSecond() == segment);
+
         bodies.remove(segment.getMiddleBody());
         ignoredPairs.removeIf(pair -> pair.a() == segment.getMiddleBody() || pair.b() == segment.getMiddleBody());
         ignoredPairs.remove(new BodyPair(segment.getEndA(), segment.getEndB()));
@@ -299,5 +320,21 @@ public class Simulation {
 
     public List<Segment> getSegments() {
         return Collections.unmodifiableList(this.segments);
+    }
+
+    /** Adds a joint between two segments that are already in the simulation. */
+    public void addJoint(SegmentJoint joint) {
+        if (!segments.contains(joint.getFirst()) || !segments.contains(joint.getSecond())) {
+            throw new IllegalArgumentException("Add both segments of a joint to the simulation before the joint.");
+        }
+        if (!joints.contains(joint)) joints.add(joint);
+    }
+
+    public void removeJoint(SegmentJoint joint) {
+        joints.remove(joint);
+    }
+
+    public List<SegmentJoint> getJoints() {
+        return Collections.unmodifiableList(this.joints);
     }
 }
