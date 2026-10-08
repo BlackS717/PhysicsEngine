@@ -64,11 +64,10 @@ void main() {
             // randomize position and size of the box
             Vector2 position = new Vector2(rand.nextFloat() * 10 - 5, 15f + i * 2.5f);
             float randomMass = 0.5f + rand.nextFloat() * 2.0f;
-            float randomSize = 0.2f + rand.nextFloat() * 0.5f;
             Body box = new Body(new Transform( position), randomMass);
 
 //        box.setCollider(new BoxCollider(box, 3f, 1.5f));
-            box.setCollider(new CircleCollider(box, randomSize));
+            box.setCollider(new CircleCollider(box, randomMass));
             box.setRestitution(0.5f);
             box.setStaticFriction(0.2f);
             box.setDynamicFriction(0f);

@@ -44,8 +44,9 @@ public class Simulation {
         if (body == null) return;
 
         Vector2 gravitationalForce = getGravitationalForce(body);
+        Vector2 dragForce = body.getVelocity().mult(-airDensity);
 
-        body.applyForces(gravitationalForce);
+        body.applyForces(gravitationalForce, dragForce);
 
         body.integrate(dt);
     }
