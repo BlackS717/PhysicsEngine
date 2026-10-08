@@ -22,4 +22,10 @@ public class BoxCollider extends  Collider{
                point.getY() >= center.getY() - halfHeight &&
                point.getY() <= center.getY() + halfHeight;
     }
+
+    @Override
+    public void update(Vector2 position, float length, float thickness) {
+        getBody().getTransform().setPosition(position.sub(getOffset()));
+        setSize(length, thickness);
+    }
 }

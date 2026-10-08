@@ -227,6 +227,9 @@ public class Segment {
         while (angle - previousAngle < -Math.PI) previousAngle -= (float) (2 * Math.PI);
 
 
+        // update the collider to match the current position and orientation of the middle body, with the correct length and thickness
+        middle.getCollider().update(middle. getTransform().getPosition(), distanceBetween(endA, endB), thickness);
+
         middle.setPreviousPose(previousA.add(previousB).mult(0.5f), previousAngle);
     }
 

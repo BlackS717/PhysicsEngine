@@ -199,8 +199,8 @@ void main() {
             Segment leftLink = link(sim, leftAnchor, left, 0.2f, 0.6f, 0.8f);
             Segment rightLink = link(sim, rightAnchor, right, 0.2f, 0.6f, 0.8f);
 
-            sim.ignoreCollisions(leftLink.getMiddleBody());
-            sim.ignoreCollisions(rightLink.getMiddleBody());
+//            sim.ignoreCollisions(leftLink.getMiddleBody());
+//            sim.ignoreCollisions(rightLink.getMiddleBody());
 
             // the platform itself is a rigid segment: a hit on it is shared between its two end bodies by where it lands
             Segment platform = link(sim, left, right, 0.5f, 1f, 0.8f);

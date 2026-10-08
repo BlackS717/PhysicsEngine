@@ -47,4 +47,6 @@ public class Collider {
         return body;
     }
 
+    public void update(Vector2 position, float length, float thickness) {
+    }
 }
