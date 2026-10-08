@@ -5,8 +5,11 @@ import math.Vector2;
 import java.util.List;
 
 /**
- * A contact between two colliders. The normal points from c1 (b1) to c2 (b2).
+ * A contact between two colliders. The normal points from c1 to c2.
  * A collision can have several contact points (e.g. 2 for a box lying flat on another box).
+ *
+ * Each collider's body is wrapped in a CollisionSide, so the same solver handles ordinary bodies and the middle
+ * box of a Segment (where an impulse is shared between the segment's two end bodies).
  *
  * Velocities are solved with sequential impulses using ACCUMULATED impulses: over the solver iterations of one
  * step, every contact remembers the total impulse applied so far and may reduce it again (never below zero for
@@ -27,16 +30,14 @@ public class Collision {
 
     private final Collider c1;
     private final Collider c2;
-    private final Body b1;
-    private final Body b2;
+    private final CollisionSide side1;
+    private final CollisionSide side2;
     private final Vector2 normal;
     private final Vector2 tangent; // perpendicular to the normal, fixed for the whole step
     private final float penetration;
     private final List<Vector2> contactPoints; // world space, at least one
 
     // ---- per-contact solver data, filled in by prepare()
-    private Vector2[] r1;              // lever arm: b1 centre -> contact
-    private Vector2[] r2;              // lever arm: b2 centre -> contact
     private float[] normalMass;        // 1 / (effective inverse mass along the normal)
     private float[] tangentMass;       // same along the tangent
     private float[] bounce;            // target normal velocity after the impact (restitution)
@@ -56,8 +57,8 @@ public class Collision {
 
         this.c1 = c1;
         this.c2 = c2;
-        this.b1 = c1.getBody();
-        this.b2 = c2.getBody();
+        this.side1 = CollisionSide.of(c1.getBody());
+        this.side2 = CollisionSide.of(c2.getBody());
         this.normal = normal;
         this.tangent = new Vector2(-normal.getY(), normal.getX());
         this.penetration = penetration;
@@ -74,52 +75,39 @@ public class Collision {
         correctPositions();
     }
 
-    /** True when neither body can move, so there is nothing to resolve. */
+    /** True when neither side can move, so there is nothing to resolve. */
     private boolean isBetweenImmovableBodies() {
-        return b1.getInverseMass() + b2.getInverseMass() == 0;
+        return side1.inverseMass() + side2.inverseMass() == 0;
     }
 
     // ---------------------------------------------------------------- velocities
 
-    /** Call once per step, before the solver iterations: computes lever arms, masses and restitution targets. */
+    /** Call once per step, before the solver iterations: computes masses and restitution targets. */
     public void prepare() {
         int n = contactPoints.size();
 
-        r1 = new Vector2[n];
-        r2 = new Vector2[n];
         normalMass = new float[n];
         tangentMass = new float[n];
         bounce = new float[n];
         normalImpulseSum = new float[n];
         tangentImpulseSum = new float[n];
 
-        muStatic = (float) Math.sqrt(b1.getStaticFriction() * b2.getStaticFriction());
-        muDynamic = (float) Math.sqrt(b1.getDynamicFriction() * b2.getDynamicFriction());
+        muStatic = (float) Math.sqrt(side1.staticFriction() * side2.staticFriction());
+        muDynamic = (float) Math.sqrt(side1.dynamicFriction() * side2.dynamicFriction());
 
-        float restitution = Math.max(b1.getRestitution(), b2.getRestitution());
-
-        float invMass1 = b1.getInverseMass();
-        float invMass2 = b2.getInverseMass();
-        float invInertia1 = b1.getInverseInertia();
-        float invInertia2 = b2.getInverseInertia();
+        float restitution = Math.max(side1.restitution(), side2.restitution());
 
         for (int i = 0; i < n; i++) {
-            Vector2 contact = contactPoints.get(i);
-            r1[i] = contact.sub(b1.getTransform().getPosition());
-            r2[i] = contact.sub(b2.getTransform().getPosition());
+            Vector2 point = contactPoints.get(i);
 
-            float r1n = cross(r1[i], normal);
-            float r2n = cross(r2[i], normal);
-            float normalDenominator = invMass1 + invMass2 + r1n * r1n * invInertia1 + r2n * r2n * invInertia2;
+            float normalDenominator = side1.inverseMassAlong(point, normal) + side2.inverseMassAlong(point, normal);
             normalMass[i] = normalDenominator > 0 ? 1f / normalDenominator : 0f;
 
-            float r1t = cross(r1[i], tangent);
-            float r2t = cross(r2[i], tangent);
-            float tangentDenominator = invMass1 + invMass2 + r1t * r1t * invInertia1 + r2t * r2t * invInertia2;
+            float tangentDenominator = side1.inverseMassAlong(point, tangent) + side2.inverseMassAlong(point, tangent);
             tangentMass[i] = tangentDenominator > 0 ? 1f / tangentDenominator : 0f;
 
             // restitution target, from the velocity at the moment of impact (slow impacts don't bounce)
-            float approachSpeed = -relativeVelocityAtContact(r1[i], r2[i]).dotProduct(normal);
+            float approachSpeed = -relativeVelocityAt(point).dotProduct(normal);
             bounce[i] = approachSpeed > RESTITUTION_VELOCITY_THRESHOLD ? restitution * approachSpeed : 0f;
         }
     }
@@ -135,7 +123,8 @@ public class Collision {
     }
 
     private void solveNormal(int i) {
-        float velocityAlongNormal = relativeVelocityAtContact(r1[i], r2[i]).dotProduct(normal);
+        Vector2 point = contactPoints.get(i);
+        float velocityAlongNormal = relativeVelocityAt(point).dotProduct(normal);
 
         // impulse that would bring the normal velocity to the target (0, or the bounce speed)
         float impulse = normalMass[i] * (bounce[i] - velocityAlongNormal);
@@ -145,11 +134,12 @@ public class Collision {
         impulse = newSum - normalImpulseSum[i];
         normalImpulseSum[i] = newSum;
 
-        applyImpulse(normal.mult(impulse), r1[i], r2[i]);
+        applyImpulse(normal.mult(impulse), point);
     }
 
     private void solveFriction(int i) {
-        float velocityAlongTangent = relativeVelocityAtContact(r1[i], r2[i]).dotProduct(tangent);
+        Vector2 point = contactPoints.get(i);
+        float velocityAlongTangent = relativeVelocityAt(point).dotProduct(tangent);
 
         float impulse = -velocityAlongTangent * tangentMass[i];
 
@@ -164,7 +154,7 @@ public class Collision {
         impulse = newSum - tangentImpulseSum[i];
         tangentImpulseSum[i] = newSum;
 
-        applyImpulse(tangent.mult(impulse), r1[i], r2[i]);
+        applyImpulse(tangent.mult(impulse), point);
     }
 
     /**
@@ -180,8 +170,8 @@ public class Collision {
         }
 
         if (touching) {
-            if (isSupportedAtRest(c1)) b1.settleIfSlow();
-            if (isSupportedAtRest(c2)) b2.settleIfSlow();
+            if (isSupportedAtRest(c1)) side1.settleIfSlow();
+            if (isSupportedAtRest(c2)) side2.settleIfSlow();
         }
     }
 
@@ -199,43 +189,34 @@ public class Collision {
     public void correctPositions() {
         if (isBetweenImmovableBodies()) return;
 
-        float invMass1 = b1.getInverseMass();
-        float invMass2 = b2.getInverseMass();
-        float totalInverseMass = invMass1 + invMass2;
+        // push apart at the middle of the contact points
+        Vector2 sum = new Vector2(0, 0);
+        for (Vector2 point : contactPoints) {
+            sum = sum.add(point);
+        }
+        Vector2 point = sum.div(contactPoints.size());
+
+        float totalInverseMass = side1.positionalInverseMass(point) + side2.positionalInverseMass(point);
+        if (totalInverseMass == 0) return;
 
         float depth = Math.max(penetration - SLOP, 0f);
-        Vector2 correction = normal.mult(depth * CORRECTION_PERCENT / totalInverseMass);
+        Vector2 displacement = normal.mult(depth * CORRECTION_PERCENT / totalInverseMass);
 
-        b1.getTransform().setPosition(b1.getTransform().getPosition().sub(correction.mult(invMass1)));
-        b2.getTransform().setPosition(b2.getTransform().getPosition().add(correction.mult(invMass2)));
+        side1.shiftPosition(displacement.mult(-1), point);
+        side2.shiftPosition(displacement, point);
     }
 
     // ---------------------------------------------------------------- helpers
 
-    /** Velocity of b2's contact point relative to b1's contact point, including spin. */
-    private Vector2 relativeVelocityAtContact(Vector2 r1, Vector2 r2) {
-        Vector2 v1 = b1.getVelocity().add(angularToLinear(b1.getAngularVelocity(), r1));
-        Vector2 v2 = b2.getVelocity().add(angularToLinear(b2.getAngularVelocity(), r2));
-        return v2.sub(v1);
+    /** Velocity of side 2's contact point relative to side 1's contact point, including spin. */
+    private Vector2 relativeVelocityAt(Vector2 point) {
+        return side2.velocityAt(point).sub(side1.velocityAt(point));
     }
 
-    /** Applies +impulse to b2 and -impulse to b1 at the contact point. */
-    private void applyImpulse(Vector2 impulse, Vector2 r1, Vector2 r2) {
-        b1.setVelocity(b1.getVelocity().sub(impulse.mult(b1.getInverseMass())));
-        b1.setAngularVelocity(b1.getAngularVelocity() - b1.getInverseInertia() * cross(r1, impulse));
-
-        b2.setVelocity(b2.getVelocity().add(impulse.mult(b2.getInverseMass())));
-        b2.setAngularVelocity(b2.getAngularVelocity() + b2.getInverseInertia() * cross(r2, impulse));
-    }
-
-    /** 2D cross product (z component of a x b). */
-    private static float cross(Vector2 a, Vector2 b) {
-        return a.getX() * b.getY() - a.getY() * b.getX();
-    }
-
-    /** Linear velocity at offset r caused by spinning at omega: omega x r. */
-    private static Vector2 angularToLinear(float omega, Vector2 r) {
-        return new Vector2(-omega * r.getY(), omega * r.getX());
+    /** Applies +impulse to side 2 and -impulse to side 1 at the contact point. */
+    private void applyImpulse(Vector2 impulse, Vector2 point) {
+        side1.applyImpulse(impulse.mult(-1), point);
+        side2.applyImpulse(impulse, point);
     }
 
     // ---------------------------------------------------------------- getters

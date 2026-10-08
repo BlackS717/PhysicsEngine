@@ -3,6 +3,7 @@ import math.Vector2;
 import physics.Body;
 import physics.BoxCollider;
 import physics.CircleCollider;
+import physics.Segment;
 import simulation.Simulation;
 import rendering.Renderer;
 
@@ -51,23 +52,28 @@ void main() {
 
         Color[] colors = {Color.RED, Color.GREEN, Color.BLUE, Color.YELLOW, Color.CYAN};
 
-        Vector2 initialVelocity = new Vector2(10, 0);
-        Body b1 = new Body(new Transform(new Vector2(-10, 10)), 1f);
-        b1.setCollider(new CircleCollider(b1, 0.1f));
-        b1.setRestitution(1.2f);
-        b1.setVelocity(initialVelocity);
-        b1.getRenderInfo().setColor(colors[0]);
+        float startingY = 20f;
 
-        Body b2 = new Body(new Transform(new Vector2(10, 10)), 1f);
-        b2.setCollider(new CircleCollider(b2, 0.1f));
-        b2.setRestitution(1.2f);
-        b2.setVelocity(initialVelocity.mult(-1f));
-        b2.getRenderInfo().setColor(colors[1]);
+        Body anchor = new Body(new Transform(new Vector2(0, startingY)), 5f);
+        anchor.setRestitution(0f);
+//        anchor.setStatic(true);
 
+        Body previous = anchor;
+        for (int i = 0; i < 16; i++) {
+            Body next = new Body(new Transform(new Vector2(1.1f * (i + 1), startingY)), 1f);
+            next.setRestitution(0f);
+            next.getRenderInfo().setColor(colors[i % colors.length]);
+            sim.addSegment(new Segment(previous, next, 0.3f));   // thickness 0.6
+            previous = next;
+        }
 
-        sim.addBody(b1);
-        sim.addBody(b2);
-
+        // add a static ball below the chain to collide with
+        Body ball = new Body(new Transform(new Vector2(5, 10)), 5f);
+        ball.setStatic(true);
+        ball.setCollider(new CircleCollider(ball, 1.0f));
+        ball.setRestitution(0f);
+        ball.getRenderInfo().setColor(Color.MAGENTA);
+        sim.addBody(ball);
 
         return sim;
     });

@@ -310,6 +310,12 @@ public class Body {
         return previousRotation;
     }
 
+    /** Overrides the pose used as "start of the last step" (for bodies that are positioned by other bodies). */
+    public void setPreviousPose(Vector2 position, float rotation) {
+        this.previousPosition = position;
+        this.previousRotation = rotation;
+    }
+
     /**
      * Moves the body back to where it was fraction t (0..1) of the way through the last integrate() step:
      * 0 = where it started, 1 = where it ended up. Used by continuous collision detection.
