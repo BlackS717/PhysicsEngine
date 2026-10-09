@@ -21,7 +21,7 @@ public class Simulation {
     // how many times the velocity solver sweeps over all collisions each step.
     // Weight has to travel down a stack (or along a chain) one contact per sweep, so tall stacks need many sweeps
     // (a stack of 10 boxes only stays up at around 80). Lower it if you have many bodies and no tall stacks.
-    private static final int SOLVER_ITERATIONS = 80;
+    private static int SOLVER_ITERATIONS = 80;
 
     // sweeps that pull segment ends back to their exact length after the velocities are solved
     private static final int SEGMENT_POSITION_ITERATIONS = 30;
@@ -253,9 +253,9 @@ public class Simulation {
         ignoredPairs.add(new BodyPair(b, a));
     }
 
-    /** Makes all collisions of a body ignored. Needed for the middle box of a segment, which is already
+    /**
+     * Makes all collisions of a body ignored. Needed for the middle box of a segment, which is already
      *  constrained by its two end bodies.
-     *
      *  */
     public void ignoreCollisions(Body b){
         ignoredBodies.add(b);
@@ -347,5 +347,9 @@ public class Simulation {
 
     public List<SegmentJoint> getJoints() {
         return Collections.unmodifiableList(this.joints);
+    }
+
+    public void setSolverIterations(int iterations) {
+        SOLVER_ITERATIONS = iterations;
     }
 }

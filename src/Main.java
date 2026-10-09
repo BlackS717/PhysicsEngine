@@ -169,7 +169,7 @@ void main() {
             spring.setElasticity(0.95f);
             sim.addSegment(spring);
 
-            ball(sim, 16.5f, 6.5f, 0.4f, 0.2f, 0.3f, Color.WHITE);
+            ball(sim, 16.5f, 6.5f, 0.4f, 0.2f, 0.5f, Color.WHITE);
         }
 
 // ---------------------------------------------------------------- 7. rigid chain
@@ -206,7 +206,7 @@ void main() {
             platform.getMiddleBody().getRenderInfo().setColor(Color.ORANGE);
 
             // lands about a sixth of the way along: the left end takes about five times as much of the impulse
-            ball(sim, -0.5f, 26.5f, 0.5f, 1.5f, 0.3f, Color.WHITE);
+            ball(sim, -0.5f, 26.5f, 0.5f, 10f, 0.3f, Color.WHITE);
         }
 
 // ---------------------------------------------------------------- 9. bend joints: welded vs soft
