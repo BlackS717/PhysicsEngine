@@ -48,7 +48,7 @@ void main() {
             buildBulletArena(sim);
             buildFrames(sim);
             buildLauncher(sim);
-            buildChain(sim);
+            buildChain(sim, 0.3f, 0.5f, 15);
             buildSuspendedPlatform(sim);
             buildBeams(sim);
 
@@ -174,16 +174,23 @@ void main() {
 
 // ---------------------------------------------------------------- 7. rigid chain
 
-        void buildChain(Simulation sim) {
+        void buildChain(Simulation sim, float thickness, float length, int links) {
             // starts horizontal and swings down; every link has a fixed length (rigidity 1 is the default)
             Body previous = anchor(-12.5f, 25.5f, Color.DARK_GRAY);
 
-            for (int i = 1; i <= 5; i++) {
-                float x = -12.5f + 1.2f * i;
-                Body next = (i < 5)
+            for (int i = 1; i <= links; i++) {
+                float x = -12.5f + length * i;
+                Body next = (i < links)
                         ? node(x, 25.5f, 0.5f, 0.1f, new Color(0, 170, 220))
                         : ball(sim, x, 25.5f, 0.6f, 2f, 0.1f, new Color(0, 170, 220)); // heavy bob at the end
-                link(sim, previous, next, 0.3f, 1f, 0.8f);
+                Body middle = link(sim, previous, next, thickness, 1f, 0.8f).getMiddleBody();
+
+                if( i < links)
+                    sim.ignoreCollisions(next); // the end bob is heavy and should hit the chain, but the chain links should not hit each other
+
+                sim.ignoreCollisions(middle); // the middle body is just a collision proxy for the two ends
+
+
                 previous = next;
             }
         }
@@ -196,10 +203,12 @@ void main() {
 
             Body left = node(-1.5f, 22.5f, 1f, 0.1f, Color.ORANGE);
             Body right = node(4.5f, 22.5f, 1f, 0.1f, Color.ORANGE);
-
             // two soft springs (about 1.9 Hz) hold the platform up
-            link(sim, leftAnchor, left, 0.2f, 0.5f, 0.85f);
-            link(sim, rightAnchor, right, 0.2f, 0.5f, 0.85f);
+            Body middleLeft = link(sim, leftAnchor, left, 0.2f, 0.5f, 0.85f).getMiddleBody();
+            Body middleRight = link(sim, rightAnchor, right, 0.2f, 0.5f, 0.85f).getMiddleBody();
+
+            sim.ignoreCollisions(middleLeft);
+            sim.ignoreCollisions(middleRight);
 
             // the platform itself is a rigid segment: a hit on it is shared between its two end bodies by where it lands
             Segment platform = link(sim, left, right, 0.5f, 1f, 0.8f);
@@ -248,31 +257,21 @@ void main() {
 // ---------------------------------------------------------------- small helpers
 
         Body staticBox(Simulation sim, float x, float y, float width, float height, Color color, float restitution) {
-            Body body = new Body(new Transform(new Vector2(x, y)), 5f);
-            body.setCollider(new BoxCollider(body, width, height));
-            body.setRestitution(restitution);
+            Body body = sim.staticBox(x, y, width, height, restitution);
             body.getRenderInfo().setColor(color);
-            body.setStatic(true);
-            sim.addBody(body);
             return body;
         }
 
         Body box(Simulation sim, float x, float y, float rotation, float width, float height,
                  float mass, float restitution, Color color) {
-            Body body = new Body(new Transform(new Vector2(x, y), rotation), mass);
-            body.setCollider(new BoxCollider(body, width, height));
-            body.setRestitution(restitution);
+            Body body = sim.box(x, y, rotation, width, height, mass, restitution);
             body.getRenderInfo().setColor(color);
-            sim.addBody(body);
             return body;
         }
 
         Body ball(Simulation sim, float x, float y, float radius, float mass, float restitution, Color color) {
-            Body body = new Body(new Transform(new Vector2(x, y)), mass);
-            body.setCollider(new CircleCollider(body, radius));
-            body.setRestitution(restitution);
+            Body body = sim.ball(x, y, radius, mass, restitution);
             body.getRenderInfo().setColor(color);
-            sim.addBody(body);
             return body;
         }
 
@@ -294,10 +293,5 @@ void main() {
 
         /** Connects two bodies with a segment (its length is their current distance) and adds it to the simulation. */
         Segment link(Simulation sim, Body a, Body b, float thickness, float rigidity, float elasticity) {
-            Segment segment = new Segment(a, b, thickness);
-            segment.setRigidity(rigidity);
-            segment.setElasticity(elasticity);
-            segment.getMiddleBody().getRenderInfo().setColor(b.getRenderInfo().getColor());
-            sim.addSegment(segment);
-            return segment;
+            return sim.link(a, b, thickness, rigidity, elasticity);
         }

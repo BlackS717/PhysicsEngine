@@ -1,14 +1,10 @@
 package simulation;
 
+import math.Transform;
 import math.Vector2;
-import physics.Body;
-import physics.Collision;
-import physics.CollisionDetector;
-import physics.ContinuousCollision;
-import physics.Segment;
-import physics.SegmentBody;
-import physics.SegmentJoint;
+import physics.*;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -351,5 +347,54 @@ public class Simulation {
 
     public void setSolverIterations(int iterations) {
         SOLVER_ITERATIONS = iterations;
+    }
+
+    public Body staticBox(float x, float y, float width, float height, float restitution){
+        Body body = new Body(new Transform(new Vector2(x, y)), 5f);
+        body.setCollider(new BoxCollider(body, width, height));
+        body.setRestitution(restitution);
+        body.setStatic(true);
+        addBody(body);
+        return body;
+    }
+
+    public Body box(float x, float y, float rotation, float width, float height,
+             float mass, float restitution) {
+        Body body = new Body(new Transform(new Vector2(x, y), rotation), mass);
+        body.setCollider(new BoxCollider(body, width, height));
+        body.setRestitution(restitution);
+        addBody(body);
+        return body;
+    }
+
+    public Body ball(float x, float y, float radius, float mass, float restitution) {
+        Body body = new Body(new Transform(new Vector2(x, y)), mass);
+        body.setCollider(new CircleCollider(body, radius));
+        body.setRestitution(restitution);
+        addBody(body);
+        return body;
+    }
+
+    public Body anchor(float x, float y) {
+        Body body = new Body(new Transform(new Vector2(x, y)), 5f);
+        body.setStatic(true);
+        return body;
+    }
+
+    /** A moving point for segments to connect. It is added to the simulation by the first segment that uses it. */
+    public Body node(float x, float y, float mass, float restitution) {
+        Body body = new Body(new Transform(new Vector2(x, y)), mass);
+        body.setRestitution(restitution);
+        return body;
+    }
+
+    /** Connects two bodies with a segment (its length is their current distance) and adds it to the simulation. */
+    public Segment link(Body a, Body b, float thickness, float rigidity, float elasticity) {
+        Segment segment = new Segment(a, b, thickness);
+        segment.setRigidity(rigidity);
+        segment.setElasticity(elasticity);
+        segment.getMiddleBody().getRenderInfo().setColor(b.getRenderInfo().getColor());
+        addSegment(segment);
+        return segment;
     }
 }
